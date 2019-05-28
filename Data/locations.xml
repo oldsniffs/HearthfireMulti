@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<world>
+	<zone>
+		<xy>10,10</xy>
+		<type>Village</type>
+		<name>Kembra</name>
+		<description></description>
+
+		<locations>
+
+			<location>
+				<xyz>7,5,0</xyz>
+				<name>Kembryna Riverbank</name>
+				<physical_description>The Kembryna River flows down from the mountains.</physical_description>
+				<distant_description>You see the Kembryna River</distant_description>
+				<harvestables>
+
+					<harvestable>
+						<name>Kembryna River</name>
+						<fish_proportion>
+							<Stanget>7</Stanget>
+							<Cremip>3</Cremip>
+						</fish_proportion>
+					</harvestable>
+
+				</harvestables>
+				<interactables></interactables>
+				<items></items>
+				<buildings></buildings>
+				<exits></exits>
+			</location>
+
+			<location>
+				<xyz>6,5,0</xyz>
+				<name>East End</name>
+				<physical_description>One hut stands at the edge of the forest.</physical_description>
+				<distant_description>A hut stands at the edge of the forest.</distant_description>
+				<harvestables>forest</harvestables>
+				<interactables></interactables>
+				<items>
+
+					<item>
+						<item_class>Stanget</item_class>
+					</item>
+					<item>
+						<item_class>Stanget</item_class>
+					</item>
+					<item>
+						<item_class>Cremip</item_class>
+					</item>
+					<item>
+						<item_class>Arrow</item_class>
+						<quantity>100</quantity>
+					</item>
+
+				</items>
+				<buildings>granno_hut</buildings>
+				<exits></exits> <!--needs to give name and destination, generate exit object-->
+			</location>
+
+			<location>
+				<xyz>5,5,0</xyz>
+				<name>Village Square</name>
+				<physical_description>Here in the square, Kembra's soft dirt road leads into open entrance of the village hall. A few large flowery Eucalyptus trees adorn the scene around the hall, which is otherwise nearly swallowed by the tall grasses of the surrounding meadow. The road extends west and east to the rest of the village.</physical_description>
+				<distant_description>You see the village square and the main hall.</distant_description>
+				<harvestables></harvestables>
+				<interactables></interactables>
+				<items>
+					<item>
+						<item_class>Cremip</item_class>
+					</item>
+				</items>
+				<buildings>village hall</buildings>
+				<exits></exits>
+			</location>
+
+			<location>
+				<xyz>4,5,0</xyz>
+				<name>West End</name>
+				<physical_description>Two small open huts stand at the edge of town.</physical_description>
+				<distant_description>Two small huts stand at the edge of town.</distant_description>
+				<harvestables></harvestables>
+				<interactables></interactables>
+				<items></items>
+				<buildings>jero_hut, roda_hut</buildings>
+				<exits></exits>
+			</location>
+
+			<location>
+				<xyz>3,5,0</xyz>
+				<name>Crivet's Stream</name>
+				<physical_description>(A stream) runs out of the mountains past the edge of the village.</physical_description>
+				<distant_description></distant_description>
+				<harvestables>Crivet's Stream</harvestables>
+				<interactables></interactables>
+				<items></items>
+				<buildings></buildings>
+				<exits></exits>
+			</location>
+
+		</locations>
+
+	</zone>
+</world>
+
+
+<!--
+			<location>
+				<xyz></xyz>
+				<name></name>
+				<physical_description></physical_description>
+				<distant_description></distant_description>
+				<harvestables></harvestables>
+				<interactables></interactables>
+				<items></items>
+				<buildings></buildings>
+				<exits></exits>
+			</location>
+-->
