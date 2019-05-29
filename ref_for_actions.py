@@ -309,104 +309,6 @@ class Game(tk.Tk):
 		self.destroy()
 
 
-class GameScreen(tk.Frame):
-
-	def __init__(self, parent):
-		tk.Frame.__init__(self, parent)
-		self.parent = parent
-
-		self.create_widgets()
-
-	def create_widgets(self):
-
-		# Borders
-		self.left_border = tk.Frame(self, height=800, width=25, bg='thistle4')
-		self.middle_border = tk.Frame(self, height=800, width=25, bg='thistle4')
-		self.right_border = tk.Frame(self, height=800, width=25, bg='thistle4')
-
-		self.top_border_left = tk.Frame(self, height=20, width=850, bg='thistle4')
-		self.top_border_right = tk.Frame(self, height=20, width=575, bg='thistle4')
-		self.bottom_border_left = tk.Frame(self, height=20, width=850, bg='thistle4')
-		self.bottom_border_right = tk.Frame(self, height=20, width=575, bg='thistle4')
-
-		self.left_border.grid(row=0, column=0, rowspan=3)
-		self.middle_border.grid(row=0, column=2, rowspan=3)
-		self.right_border.grid(row=0, column=4, rowspan=3)
-
-		self.top_border_left.grid(row=0, column=1, sticky='n')
-		self.top_border_right.grid(row=0, column=3, sticky='n')
-		self.bottom_border_left.grid(row=2, column=1, sticky='s')
-		self.bottom_border_right.grid(row=2, column=3, sticky='s')
-
-		# Container Frames
-		self.text_frame = tk.Frame(self, height=760, width=850, bg='black')
-		self.visual_frame = tk.Frame(self, height=760, width=575, bg='thistle3')
-
-		self.text_frame.grid(row=1, column=1, sticky='nsew')
-		self.visual_frame.grid(row=1, column=3)
-
-		# I am still a little confused. These lines I assume apply to the text_frame as it occupies this grid location and it affects how the contained packed widget - text_output.pack(expand=True, fill='y') - fills the grid cell. It does what I want though.  3/4 - It's because the containing frame (being referened in these lines), also needs to be expandable in order for the packed widgets contained within to operate as such.
-		# At a later time, I want to make the entire GUI stretchable so the user can resize up to fullscreen. The text elements should take up the new space rather than visual.
-		
-		self.columnconfigure(1, weight=1)
-		self.rowconfigure(1, weight=1)
-
-		# Text Panels
-
-		self.text_output = OutputText(self.text_frame, width=105, bg='black', foreground='#CCCCFF', wrap='word', relief='sunken', state='disabled')
-		self.player_input = tk.Text(self.text_frame, height=2, width=105, bg='black', foreground='white', relief="sunken")
-		self.text_output.pack(expand=True, fill='y')
-		self.player_input.pack()
-
-
-class OutputText(tk.Text):
-	def __init__(self, *args, **kwargs):
-		tk.Text.__init__(self, *args, **kwargs)
-
-		# self.output_font = tkfont.Font('system', 8)
-		# self.configure(font=self.output_font)
-
-		# ---- Tags ----
-
-		self.tag_configure('red', foreground='#ff0000')
-		self.tag_configure('orange-red', foreground='#FF4500')
-		self.tag_configure('dark-turquoise', foreground='#2C7B80')
-		self.tag_configure('light-turquoise', foreground='#3FB1B7')
-		self.tag_configure('salmon', foreground='#D76565')
-		self.tag_configure('light-salmon', foreground='#6B3232')
-		self.tag_configure('teal', foreground='#01B8AA')
-		self.tag_configure('mudfish', foreground='#2E3A22')
-		self.tag_configure('light-mudfish', foreground='#12170D')
-		self.tag_configure('light-lavender', foreground='#9797FF')
-		self.tag_configure('vanilla', foreground='#fff68f')
-		self.tag_configure('overcast', foreground='#939FAB')
-		self.tag_configure('cocoa', foreground='#3E2323')
-		self.tag_configure('blood', foreground='#6D0F0F')
-		self.tag_configure('lavender-blue', foreground='#CCCCFF')
-		self.tag_configure('light-brown', foreground='#AB9481')
-		self.tag_configure('muted-purple', foreground='#6F404B')
-
-	def apply_tag_to_pattern(self, pattern, tag, start='1.0', end='end', regexp=False):
-
-		start = self.index(start)
-		end = self.index(end)
-
-		self.mark_set('matchStart', start)
-		self.mark_set('matchEnd', start)
-		self.mark_set('searchLimit', end)
-
-		count = tk.IntVar() # initiates at 0
-		while True:
-			index = self.search(pattern, 'matchEnd', 'searchLimit', count=count, regexp=regexp)
-			if index == '': 
-				break
-			if count.get() == 0: 
-				break
-			self.mark_set('matchStart', index)
-			self.mark_set('matchEnd', '%s+%sc' % (index, count.get()))
-			self.tag_add(tag, 'matchStart', 'matchEnd')
-
-
 class ActionCommand:
 	def __init__(self, controller): # Add subject assignment
 		self.subject = None
@@ -419,15 +321,6 @@ class ActionCommand:
 
 	def not_understood(self):
 		self.controller.display_text_output('I don\'t understand what you\'re trying to do.')
-
-# ---- Functions ----
-
-# Used to match words[] strings to name variables from a list of objects by returning a dictionary of all object names as keys, and objects references as values.
-def get_names_from_object_list(object_list):
-	matching_dict = {}
-	for o in object_list:
-		matching_dict[o.name] = o
-	return matching_dict
 
 
 Game().start()

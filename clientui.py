@@ -61,6 +61,7 @@ class ClientUI(tk.Tk):
 
         if player_input == 'quit':
             self.quit()
+            return None
         elif player_input == 'menu':
             pass
 
@@ -82,16 +83,20 @@ class ClientUI(tk.Tk):
                 self.display_text_output(f'Attempting to connect to {self.server_ip}', command_readback=True)
                 print(self.server_ip)
                 self.connect()
+                return None
 
         player_input = ' '.join(words)
 
         if is_command:
             self.send_command(player_input)
         else:
-            return player_input
+            return None
 
     def send_command(self, command):
-        pass
+        out_command = command.encode('utf-8')
+        command_header = f'{len(out_command):<{HEADER_LENGTH}}'.encode('utf-8')
+        self.socket.send(command_header + out_command)
+        print(out_command)
 
     def get_player_input(self):
 

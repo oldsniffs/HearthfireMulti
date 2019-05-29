@@ -2,6 +2,7 @@ import select
 import socket
 import threading
 import locations
+import queue
 import time
 
 """
@@ -17,54 +18,34 @@ Listens for commands from clients, returns a message regarding the command if ne
 """ Notes for Development
 Thread Objects from threading have a join function - which allows multiple threads to wait for another Thread to terminate.
 Even Objects can also coordinate activity between threads.
+
+Question of checking client sockets with server socket: Splitting them with the idea
+that not checking the server socket for (rare) new connections will keep client scanning
+more brisk. However, if all was done in same loop, no threading overhead would be generated.
+
+Question of using a Client class: Operations will be more granular with a class. 
 """
 
 HEADER_LENGTH = 10
 
-server_address = '10.0.0.72'
+server_address = '10.0.0.43'
 port = 1234
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # sockets list possibly could hold Client objects, if select.select will still detect changes to the socket contained in the Client
 # But I think this could get messy.
-sockets_list = [server_socket]
-clients = []
+sockets = [server]
+actionable_sockets = []
 players = {} # can match client to player
+command_queues = {}
 online_player_locations = []
 
-server_socket.bind((server_address, port))
-server_socket.listen(5)
+server.bind((server_address, port))
+server.listen(5)
 
-world = threading.Thread(target=locations.World, name='world thread')
-world.start()
+world_events = []
 
-
-class Client:
-	def __init__(self, socket, address):
-		self.socket = socket
-		sockets_list.append(self.socket)
-		self.address = address
-
-		self.player_name = ''
-		self.player_login()
-
-	def player_login(self):
-		self.socket.recv(HEADER_LENGTH)
-
-	def receive_transmission(self):
-		transmission_header = self.socket.recv(HEADER_LENGTH)
-
-		if not len(transmission_header):
-			return False
-
-		transmission_length = int(transmission_header.decode('utf-8'))
-		return {'header': transmission_header, 'message': self.socket.recv(transmission_length)} # Could try decoding here
-
-def listen_for_commands():
-	read_clients, _, _e = select.select(clients, [], [])
-	for client in read_clients:
-		print(client)
 
 def receive_command(client_socket):
 
@@ -74,33 +55,54 @@ def receive_command(client_socket):
 		return False
 
 	message_length = int(command_header.decode('utf-8'))
+	return client_socket.recv(message_length).decode('utf-8')
 
 
+def run_server():
+	while True:
+		readables, actionables, exceptionals = select.select(sockets, actionable_sockets, sockets)
 
-print('accepting new connections')
+		for sock in readables:
+			if sock == server:
+				new_client, client_address = server.accept()
+				print(f'connection from {client_address[0]}:{client_address[1]} accepted.')
+				sockets.append(new_client)
+				command_queues[new_client] = queue.Queue()
+
+			else:
+				client_message = receive_command(sock)
+
+				if client_message:
+					command_queues[sock].put(client_message)
+					if sock not in actionable_sockets:
+						actionable_sockets.append(sock)
+
+				else:
+					print(f'Lost connection from {sock.getsockname()}.')
+					if sock in actionable_sockets:
+						actionable_sockets.remove(sock)
+					sock.close()
+					sockets.remove(sock)
+					del command_queues[sock]
+
+		for sock in actionables:
+			try:
+				next_command = command_queues[sock].get_nowait()
+				print(next_command)
+				print(command_queues)
+			except queue.Empty:
+				actionables.remove(sock)
+			else:
+				pass
+				# process command
 
 
-def accept_connections():
-	read_sockets, writable_sockets, exception_sockets = select.select(sockets_list, [], sockets_list)
+		for sock in exceptionals:
+			print(f'Lost connection from {sock.getsockname()}.')
+			if sock in actionable_sockets:
+				actionable_sockets.remove(sock)
+			sock.close()
+			sockets.remove(sock)
+			del command_queues[sock]
 
-	for s in read_sockets:
-		if s == server_socket:
-			print('incoming connection attempt')
-			client_socket, client_address = server_socket.accept()
-			print(f'connection from {client_address[0]}:{client_address[1]} accepted.')
-			c = threading.Thread(target=Client, args=(client_socket, client_address))
-			c.start()
-
-		else:
-			header = s.recv(HEADER_LENGTH)
-			message_size = int(header.decode('utf-8'))
-
-
-
-	for s in writable_sockets:
-		pass
-
-
-	for s in exception_sockets:
-		# close out the socket
-		s.close()
+run_server()
