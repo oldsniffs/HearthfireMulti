@@ -1,19 +1,29 @@
 """
-TODO: GUI: remove "border" frames and simply rely on background color.
+TODO: Attempting to connect ... 3.. 2.. 1..
+
 TODO: Store recent user inputs to recall
+TODO: Implement universal unbinding for all keys
+
+TODO: If any parse can be done client side (at least verb), client could just send command object, easing burden on server
+TODO: Probably merge send_non_command with send_command, and let the process methods handle different protocols
+
+TODO: the color tag checker is reviewing all text each time text is displayed. It is changing previous tags (I think the order is based tag declaration order) and redoing all previous work each time. Have it just look at text being posted, possibly before insertion?
 
 """
 
 import tkinter as tk
 from actions import *
-import network
+import sys
 import socket
+import datetime
+import threading
 
 HEADER_LENGTH = 10
 
 PORT = 1234
 TIMEOUT = 3
 
+INPUT = ''
 
 class ClientUI(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -21,6 +31,8 @@ class ClientUI(tk.Tk):
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.settimeout(TIMEOUT)
+
+        self.player_name = ''
 
         self.title('Hearthfire')
         self.geometry('1500x800')
@@ -34,6 +46,20 @@ class ClientUI(tk.Tk):
         self.game_screen.player_input.focus_force()
         self.bind_game_keys()
 
+    def login(self):
+        # Placeholder login sequence, to have server assign client a player
+        self.display_text_output('Your essence is drawn through spacetime to a particular point.')
+        self.display_text_output('You sense your destination is nearing...')
+        self.display_text_output('As you are pulled into the hearthfire, you must decide: Who are you?')
+        login_name = self.await_input()
+        print(login_name)
+
+    def await_input(self):
+        self.unbind_keys()
+        self.bind_await_input_keys()
+        self.bind_game_keys()
+        return INPUT
+
     def refresh_socket(self):
         self.socket.close()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,18 +69,34 @@ class ClientUI(tk.Tk):
         try:
             print('trying to connect to: ', self.server_ip)
             self.socket.connect((self.server_ip, PORT))
-            self.socket.setblocking(False)
         except socket.timeout as e:
             self.display_text_output(f'Attempt to connect to {self.server_ip} timed out. Please check server status and try again.')
             self.refresh_socket()
             print(e)
         except socket.gaierror:
             self.display_text_output(f'{self.server_ip} is not a valid server address.')
+        else:
+            self.socket.settimeout(0)
+            self.login()
 
-    def listen(self):
-        pass
 
-    def process_player_input(self, event, is_command=True):
+    def listen_for_broadcasts(self):
+        while True:
+            # Check tag for 'special' broadcasts, run through a filter
+            broadcast_header = self.socket.recv(HEADER_LENGTH)
+
+            if not len(broadcast_header):
+                print('Connection closed by server')
+                sys.exit()
+
+            broadcast_length = int(broadcast_header.decode('utf-8'))
+            broadcast = self.socket.recv(broadcast_length).decode('utf-8')
+
+            print(datetime.now(), broadcast)
+
+            self.display_text_output(broadcast)
+
+    def process_player_command(self, event, is_command=True):
         # TODO: see if event argument is needed
         player_input = self.get_player_input()
         self.display_text_output(player_input, command_readback=True)
@@ -98,6 +140,12 @@ class ClientUI(tk.Tk):
         self.socket.send(command_header + out_command)
         print(out_command)
 
+    def send_non_command(self, non_command):
+        out_non_command = non_command.lower().encode('utf-8')
+        non_command_header = f'{len(out_non_command):<{HEADER_LENGTH}}'.encode('utf-8')
+        self.socket.send(non_command_header + out_non_command)
+        print(out_non_command)
+
     def get_player_input(self):
 
         player_input_text = self.game_screen.player_input.get(1.0, 'end-2l lineend')
@@ -105,12 +153,29 @@ class ClientUI(tk.Tk):
 
         return player_input_text
 
-    # ---- Bindings
+    def process_non_command(self):
+
+        non_command = self.get_player_input()
+
+        # TODO: Add checks for invalid input
+
+        self.send_non_command(non_command)
+
+
+    # ---- Key Bindings
+
+    def bind_await_input_keys(self):
+        self.bind('<Return>', self.get_special_input)
 
     def bind_game_keys(self):
-        self.bind('<Return>', self.process_player_input)
+        self.bind('<Return>', self.process_player_command)
 
-    def unbind_game_keys(self):
+    def bind_client_keys(self):
+        # Bind client level keys that are used in all game modes. Client keys like escape
+        self.bind('<Escape>', self.escape_main_menu())
+
+    def unbind_keys(self):
+        # Does not unbind client level keys
         self.unbind('<Return>')
 
     def escape_main_menu(self, event):
@@ -130,6 +195,7 @@ class ClientUI(tk.Tk):
 
     def quit(self):
         self.destroy()
+        sys.exit()
 
     # ---- Text Display
     def display_location(self, location):
@@ -137,7 +203,6 @@ class ClientUI(tk.Tk):
 
     def display_text_output(self, text, pattern1=None, tag1=None, pattern2=None, tag2=None, command_readback=False,
                             tagging='default'):
-        # TODO: the color tag checker is reviewing all text each time text is displayed. It is changing previous tags (I think the order is based tag declaration order) and redoing all previous work each time. Have it just look at text being posted, possibly before insertion?
 
         if command_readback == True:
             text = text + '\n'

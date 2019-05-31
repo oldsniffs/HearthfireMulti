@@ -33,11 +33,9 @@ port = 1234
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# sockets list possibly could hold Client objects, if select.select will still detect changes to the socket contained in the Client
-# But I think this could get messy.
 sockets = [server]
 actionable_sockets = []
-players = {} # can match client to player
+players = {} # can match socket to player
 command_queues = {}
 online_player_locations = []
 
@@ -49,13 +47,28 @@ world_events = []
 
 def receive_command(client_socket):
 
-	command_header = client_socket.recv(HEADER_LENGTH)
+	try:
+		header = client_socket.recv(HEADER_LENGTH).decode('utf-8')
 
-	if not len(command_header):
+		if not len(header):
+			return False
+
+		command_length = int(header)
+		command = client_socket.recv(command_length).decode('utf-8')
+		command = command.lower()
+
+		return command
+
+	except ConnectionResetError as e:
+		print(f'**Error while receiveing command from {client_socket.getsockname()}:', e)
 		return False
 
-	message_length = int(command_header.decode('utf-8'))
-	return client_socket.recv(message_length).decode('utf-8')
+
+def login(client):
+	pass
+
+def broadcast(client):
+	pass
 
 
 def run_server():
@@ -65,9 +78,12 @@ def run_server():
 		for sock in readables:
 			if sock == server:
 				new_client, client_address = server.accept()
-				print(f'connection from {client_address[0]}:{client_address[1]} accepted.')
+				print(f'Connection from {client_address[0]}:{client_address[1]} established')
 				sockets.append(new_client)
 				command_queues[new_client] = queue.Queue()
+
+				if new_client not in players:
+					pass
 
 			else:
 				client_message = receive_command(sock)
@@ -78,7 +94,8 @@ def run_server():
 						actionable_sockets.append(sock)
 
 				else:
-					print(f'Lost connection from {sock.getsockname()}.')
+					# Instead of adding a message by socket, add it by player.
+					print(f'Connection from {sock.getsockname()} lost.')
 					if sock in actionable_sockets:
 						actionable_sockets.remove(sock)
 					sock.close()
@@ -89,13 +106,14 @@ def run_server():
 			try:
 				next_command = command_queues[sock].get_nowait()
 				print(next_command)
-				print(command_queues)
+				print(command_queues[sock])
 			except queue.Empty:
 				actionables.remove(sock)
+			except KeyError as e:
+				print(e)
 			else:
 				pass
 				# process command
-
 
 		for sock in exceptionals:
 			print(f'Lost connection from {sock.getsockname()}.')
@@ -104,5 +122,6 @@ def run_server():
 			sock.close()
 			sockets.remove(sock)
 			del command_queues[sock]
+
 
 run_server()
