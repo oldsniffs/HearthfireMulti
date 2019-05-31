@@ -8,6 +8,19 @@ TODO: If any parse can be done client side (at least verb), client could just se
 TODO: Probably merge send_non_command with send_command, and let the process methods handle different protocols
 
 TODO: the color tag checker is reviewing all text each time text is displayed. It is changing previous tags (I think the order is based tag declaration order) and redoing all previous work each time. Have it just look at text being posted, possibly before insertion?
+TODO: Determine if send command and send non_command can be consolidated
+
+TODO: Special text reading system, to break down strings of text from a file into multiple
+display_text_outputs. Will obsolete login function
+
+TODO: (Possible) Implement purpose headers, so server knows what to do with incoming data
+TODO: (Possible) send_command more speicalized
+
+ISSUES
+
+LISTENING FOR BROADCASTS
+Will listen for broadcasts work? can that thread fly? Will a "server tick" 1 second timout on the
+recv keep cpu usage acceptable?
 
 """
 
@@ -21,9 +34,11 @@ import threading
 HEADER_LENGTH = 10
 
 PORT = 1234
-TIMEOUT = 3
+TIMEOUT = 1
 
 INPUT = ''
+LOGGING_IN = True
+
 
 class ClientUI(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -47,18 +62,27 @@ class ClientUI(tk.Tk):
         self.bind_game_keys()
 
     def login(self):
-        # Placeholder login sequence, to have server assign client a player
+        self.bind_login()
         self.display_text_output('Your essence is drawn through spacetime to a particular point.')
         self.display_text_output('You sense your destination is nearing...')
         self.display_text_output('As you are pulled into the hearthfire, you must decide: Who are you?')
-        login_name = self.await_input()
-        print(login_name)
 
-    def await_input(self):
-        self.unbind_keys()
-        self.bind_await_input_keys()
-        self.bind_game_keys()
-        return INPUT
+    def get_login(self, event):
+        login_name = self.get_player_input()
+
+        self.send_command(login_name)
+
+
+        response_header = self.socket.recv(HEADER_LENGTH).decode('utf-8')
+
+        if not len(response_header):
+            return False
+
+        response_length = int(response_header)
+        response = self.socket.recv(response_length).decode('utf-8').lower()
+
+        print(response)
+
 
     def refresh_socket(self):
         self.socket.close()
@@ -76,9 +100,8 @@ class ClientUI(tk.Tk):
         except socket.gaierror:
             self.display_text_output(f'{self.server_ip} is not a valid server address.')
         else:
-            self.socket.settimeout(0)
+            self.socket.settimeout(TIMEOUT)
             self.login()
-
 
     def listen_for_broadcasts(self):
         while True:
@@ -96,7 +119,7 @@ class ClientUI(tk.Tk):
 
             self.display_text_output(broadcast)
 
-    def process_player_command(self, event, is_command=True):
+    def process_command(self, event):
         # TODO: see if event argument is needed
         player_input = self.get_player_input()
         self.display_text_output(player_input, command_readback=True)
@@ -129,22 +152,13 @@ class ClientUI(tk.Tk):
 
         player_input = ' '.join(words)
 
-        if is_command:
-            self.send_command(player_input)
-        else:
-            return None
+        self.send_command(player_input)
 
     def send_command(self, command):
         out_command = command.encode('utf-8')
         command_header = f'{len(out_command):<{HEADER_LENGTH}}'.encode('utf-8')
         self.socket.send(command_header + out_command)
         print(out_command)
-
-    def send_non_command(self, non_command):
-        out_non_command = non_command.lower().encode('utf-8')
-        non_command_header = f'{len(out_non_command):<{HEADER_LENGTH}}'.encode('utf-8')
-        self.socket.send(non_command_header + out_non_command)
-        print(out_non_command)
 
     def get_player_input(self):
 
@@ -153,26 +167,18 @@ class ClientUI(tk.Tk):
 
         return player_input_text
 
-    def process_non_command(self):
-
-        non_command = self.get_player_input()
-
-        # TODO: Add checks for invalid input
-
-        self.send_non_command(non_command)
-
 
     # ---- Key Bindings
 
-    def bind_await_input_keys(self):
-        self.bind('<Return>', self.get_special_input)
+    def bind_login(self):
+        self.bind('<Return>', self.get_login)
 
     def bind_game_keys(self):
-        self.bind('<Return>', self.process_player_command)
+        self.bind('<Return>', self.process_command)
 
     def bind_client_keys(self):
         # Bind client level keys that are used in all game modes. Client keys like escape
-        self.bind('<Escape>', self.escape_main_menu())
+        self.bind('<Escape>', self.escape_main_menu)
 
     def unbind_keys(self):
         # Does not unbind client level keys

@@ -28,7 +28,7 @@ Question of using a Client class: Operations will be more granular with a class.
 
 HEADER_LENGTH = 10
 
-server_address = '10.0.0.43'
+server_address = '10.0.0.72'
 port = 1234
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,6 +43,8 @@ server.bind((server_address, port))
 server.listen(5)
 
 world_events = []
+
+world = locations.World()
 
 
 def receive_command(client_socket):
@@ -94,7 +96,6 @@ def run_server():
 						actionable_sockets.append(sock)
 
 				else:
-					# Instead of adding a message by socket, add it by player.
 					print(f'Connection from {sock.getsockname()} lost.')
 					if sock in actionable_sockets:
 						actionable_sockets.remove(sock)
@@ -103,17 +104,30 @@ def run_server():
 					del command_queues[sock]
 
 		for sock in actionables:
-			try:
-				next_command = command_queues[sock].get_nowait()
-				print(next_command)
-				print(command_queues[sock])
-			except queue.Empty:
-				actionables.remove(sock)
-			except KeyError as e:
-				print(e)
+			if sock not in players:
+				try:
+					login_player = command_queues[sock].get_nowait()
+					if login_player in [player.name for player in world.players]:
+						for player in world.players:
+							if login_player == player.name:
+								players[sock] = player
+					else:
+						print(f'{login_player} needs to login')
+
+				except queue.Empty:
+					actionables.remove(sock)
+
 			else:
-				pass
-				# process command
+				try:
+					next_command = command_queues[sock].get_nowait()
+
+				except queue.Empty:
+					actionables.remove(sock)
+				except KeyError as e:
+					print(e)
+				else:
+					pass
+					# process command
 
 		for sock in exceptionals:
 			print(f'Lost connection from {sock.getsockname()}.')
