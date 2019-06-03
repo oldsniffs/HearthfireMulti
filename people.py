@@ -231,8 +231,8 @@ class Person():
 
 class Player(Person):
 
-	def __init__(self, game, name):
-		super().__init__(game, name)
+	def __init__(self, world, name):
+		super().__init__(world, name)
 		self.inventory = [items.Stanget()]
 
 	def show_location(self):

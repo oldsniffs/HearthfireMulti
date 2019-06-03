@@ -79,14 +79,14 @@ def readin_item_data(the_class, node):
 		if 'name' in dir(sc): # PROBLEM : plural terms getting double added
 			all_item_names.append(sc.name)
 			if sc.plural_name not in all_item_names:
-				print(sc.plural_name+' not in ', all_item_names, ' -adding now.')
+				#print(sc.plural_name+' not in ', all_item_names, ' -adding now.')
 				all_item_names.append(sc.plural_name)
 			all_item_names.append(sc.plural_name)
 			if sc.__subclasses__() == []:
 				all_terminal_item_names.append(sc.name)
 				all_terminal_items.append(sc)
 				if sc.plural_name not in all_terminal_item_names:
-					print(sc.plural_name + ' not in ', all_terminal_item_names, ' -adding now')
+					#print(sc.plural_name + ' not in ', all_terminal_item_names, ' -adding now')
 					all_terminal_item_names.append(sc.plural_name)
 
 

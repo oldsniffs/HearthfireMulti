@@ -27,39 +27,38 @@ Question of using a Client class: Operations will be more granular with a class.
 """
 
 HEADER_LENGTH = 10
+CODE_LENGTH = 2
 HEADER_AND_CODE = HEADER_LENGTH + 2
 
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_address = '10.0.0.43'
 port = 1234
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-sockets = [server]
-actionable_sockets = []
-players = {} # can match socket to player
-command_queues = {}
-online_player_locations = []
-
 server.bind((server_address, port))
 server.listen(5)
 
-world_events = []
+sockets = [server]
+actionable_sockets = []
+players = {}  # {client: player}
+command_queues = {}
+online_player_locations = []
 
+world_events = []
 world = locations.World()
 
 
-def receive_command(client_socket):
+def receive_message(client_socket):
 
 	try:
 		header = client_socket.recv(HEADER_LENGTH).decode('utf-8')
+		code = client_socket.recv(CODE_LENGTH).decode('utf-8')
 
 		if not len(header):
 			return False
 
-		command_length = int(header)
-		command = client_socket.recv(command_length).decode('utf-8')
+		message_length = int(header)
+		message = client_socket.recv(message_length).decode('utf-8')
 
-		return command
+		return message
 
 	except ConnectionResetError as e:
 		print(f'**Error while receiveing command from {client_socket.getsockname()}:', e)
@@ -71,9 +70,8 @@ def login(client):
 
 
 def broadcast(client, message):
-	out_message = message.encode('utf-8')
-	broadcast_header = f'{len(message):<{HEADER_LENGTH}}'.encode('utf-8')
-	client.send(broadcast_header + out_message)
+	broadcast_header = f'{len(message):<{HEADER_LENGTH}}'
+	client.send(broadcast_header.encode('utf-8') + message.encode('utf-8'))
 
 
 def run_server():
@@ -91,7 +89,7 @@ def run_server():
 					pass
 
 			else:
-				client_message = receive_command(sock)
+				client_message = receive_message(sock)
 
 				if client_message:
 					command_queues[sock].put(client_message)
@@ -116,7 +114,9 @@ def run_server():
 								players[sock] = player
 								broadcast(sock, f'Logged in as {players[sock].name}.')
 					else:
-						print(f'{login_player} needs to login')
+						players[sock] = locations.people.Player(world, login_player)
+						world.players.append(players[sock])
+						broadcast(sock, f'New player {players[sock].name} created.')
 
 				except queue.Empty:
 					actionables.remove(sock)

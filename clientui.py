@@ -1,18 +1,15 @@
 """
 TODO: Attempting to connect ... 3.. 2.. 1.. (for loop in range(TIMEOUT))
 
-TODO: Store recent user inputs to recall
+TODO: Store recent user commands to recall
 TODO: Implement universal unbinding for all keys
 
 TODO: If any parse can be done client side (at least verb), client could just send command object, easing burden on server
 
 TODO: the color tag checker is reviewing all text each time text is displayed. It is changing previous tags (I think the order is based tag declaration order) and redoing all previous work each time. Have it just look at text being posted, possibly before insertion?
-TODO: Determine if send command and send non_command can be consolidated
 
 TODO: Special text reading system, to break down strings of text from a file into multiple
 display_text_outputs. Will obsolete login function
-
-TODO: (Possible) Implement purpose headers, so server knows what to do with incoming data
 
 ISSUES
 
@@ -65,13 +62,22 @@ class ClientUI(tk.Tk):
         self.bind_login()
         self.display_text_output('Your essence is drawn through spacetime to a particular point.')
         self.display_text_output('You sense your destination is nearing...')
-        self.display_text_output('As you are pulled into the hearthfire, you must decide: Who are you?')
+        self.display_text_output('As you are pulled into the fire, you must decide: Who are you?')
 
+        self.bind_login()
+
+    def enter_to_continue(self):
+        # Make a function which takes function as argument. '<Return>' gets bound with a function that prints the next
+        # line when user hits key. This way user can "scroll" through story dialog, not have it all pop up at once.
+        pass
+
+    def real_get_login(self):
+        pass
 
     def get_login(self, event):
         login_name = self.get_player_input()
 
-        self.send_(login_name)
+        self.send_message(login_name)
 
         response_header = self.socket.recv(HEADER_LENGTH).decode('utf-8')
 
@@ -163,7 +169,7 @@ class ClientUI(tk.Tk):
 
         message_header = f'{len(message):<{HEADER_LENGTH}}'
 
-        self.socket.send(message_header.encode('utf-8') + code.encode('utf08') + message.encode('utf-8'))
+        self.socket.send(message_header.encode('utf-8') + code.encode('utf-8') + message.encode('utf-8'))
 
         print(message)
         print(message)
