@@ -27,8 +27,9 @@ Question of using a Client class: Operations will be more granular with a class.
 """
 
 HEADER_LENGTH = 10
+HEADER_AND_CODE = HEADER_LENGTH + 2
 
-server_address = '10.0.0.72'
+server_address = '10.0.0.43'
 port = 1234
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -57,7 +58,6 @@ def receive_command(client_socket):
 
 		command_length = int(header)
 		command = client_socket.recv(command_length).decode('utf-8')
-		command = command.lower()
 
 		return command
 
@@ -69,8 +69,11 @@ def receive_command(client_socket):
 def login(client):
 	pass
 
-def broadcast(client):
-	pass
+
+def broadcast(client, message):
+	out_message = message.encode('utf-8')
+	broadcast_header = f'{len(message):<{HEADER_LENGTH}}'.encode('utf-8')
+	client.send(broadcast_header + out_message)
 
 
 def run_server():
@@ -111,6 +114,7 @@ def run_server():
 						for player in world.players:
 							if login_player == player.name:
 								players[sock] = player
+								broadcast(sock, f'Logged in as {players[sock].name}.')
 					else:
 						print(f'{login_player} needs to login')
 

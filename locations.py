@@ -16,6 +16,7 @@ class World:
 		self.load_map()
 
 		self.players = [] # Player objects. This is where server.py looks for players to assign to client sockets
+		self.players.append(people.Player(self, 'Fred'))
 
 		self.populate()
 

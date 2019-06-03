@@ -53,14 +53,14 @@ class Vocation():
 		self.name = ''
 
 class Person():
-	def __init__(self, game, name='random', faction='tbd', location='default'): # vocation, skills, attributes): # 
+	def __init__(self, world, name): # vocation, skills, attributes): #
 
-		self.game = game
+		self.world = world
 		self.name = name
 		self.mb = 1
 		all_people.append(self)
 		all_people_names.append(self.name)
-		self.location = location
+		self.location = self.world.map[(10,10)].map[(5,5,0)]
 		# if location == 'default':
 		# 	self.location =  self.faction.home
 		self.daily_calories = 0
@@ -110,7 +110,7 @@ class Person():
 	def absorb_calories(self):
 		# daily_caloric_needs formula to be designed later. 2000 default for now
 		daily_caloric_needs = 2000
-		calorie_balance = daily_calories - daily_caloric_needs
+		calorie_balance = ''
 		weight_change = calorie_balance/9
 
 # ---- Actions ----
@@ -231,9 +231,8 @@ class Person():
 
 class Player(Person):
 
-	def __init__(self, game, name, location):
-		self.location = location
-		super().__init__(game, name, location=self.location)
+	def __init__(self, game, name):
+		super().__init__(game, name)
 		self.inventory = [items.Stanget()]
 
 	def show_location(self):

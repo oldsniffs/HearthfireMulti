@@ -1,11 +1,10 @@
 """
-TODO: Attempting to connect ... 3.. 2.. 1..
+TODO: Attempting to connect ... 3.. 2.. 1.. (for loop in range(TIMEOUT))
 
 TODO: Store recent user inputs to recall
 TODO: Implement universal unbinding for all keys
 
 TODO: If any parse can be done client side (at least verb), client could just send command object, easing burden on server
-TODO: Probably merge send_non_command with send_command, and let the process methods handle different protocols
 
 TODO: the color tag checker is reviewing all text each time text is displayed. It is changing previous tags (I think the order is based tag declaration order) and redoing all previous work each time. Have it just look at text being posted, possibly before insertion?
 TODO: Determine if send command and send non_command can be consolidated
@@ -14,7 +13,6 @@ TODO: Special text reading system, to break down strings of text from a file int
 display_text_outputs. Will obsolete login function
 
 TODO: (Possible) Implement purpose headers, so server knows what to do with incoming data
-TODO: (Possible) send_command more speicalized
 
 ISSUES
 
@@ -38,6 +36,8 @@ TIMEOUT = 1
 
 INPUT = ''
 LOGGING_IN = True
+
+BOUND_KEYS = ['<Return>']
 
 
 class ClientUI(tk.Tk):
@@ -67,11 +67,11 @@ class ClientUI(tk.Tk):
         self.display_text_output('You sense your destination is nearing...')
         self.display_text_output('As you are pulled into the hearthfire, you must decide: Who are you?')
 
+
     def get_login(self, event):
         login_name = self.get_player_input()
 
-        self.send_command(login_name)
-
+        self.send_(login_name)
 
         response_header = self.socket.recv(HEADER_LENGTH).decode('utf-8')
 
@@ -83,6 +83,11 @@ class ClientUI(tk.Tk):
 
         print(response)
 
+    def receive_broadcast(self):
+        message_header = self.socket.recv(HEADER_LENGTH)
+        message_length = int(message_header.decode('utf-8'))
+        message = self.socket.recv(message_length).decode('utf-8')
+        return message
 
     def refresh_socket(self):
         self.socket.close()
@@ -152,13 +157,16 @@ class ClientUI(tk.Tk):
 
         player_input = ' '.join(words)
 
-        self.send_command(player_input)
+        self.send_message(player_input)
 
-    def send_command(self, command):
-        out_command = command.encode('utf-8')
-        command_header = f'{len(out_command):<{HEADER_LENGTH}}'.encode('utf-8')
-        self.socket.send(command_header + out_command)
-        print(out_command)
+    def send_message(self, message, code ='00'):
+
+        message_header = f'{len(message):<{HEADER_LENGTH}}'
+
+        self.socket.send(message_header.encode('utf-8') + code.encode('utf08') + message.encode('utf-8'))
+
+        print(message)
+        print(message)
 
     def get_player_input(self):
 
@@ -167,22 +175,26 @@ class ClientUI(tk.Tk):
 
         return player_input_text
 
-
     # ---- Key Bindings
 
     def bind_login(self):
+        self.unbind_game_keys()
+
+        BOUND_KEYS.append('<Return>')
         self.bind('<Return>', self.get_login)
 
     def bind_game_keys(self):
+        self.unbind_game_keys()
+
+        BOUND_KEYS.append('<Return>')
         self.bind('<Return>', self.process_command)
 
-    def bind_client_keys(self):
-        # Bind client level keys that are used in all game modes. Client keys like escape
+    def bind_client_level_keys(self):
         self.bind('<Escape>', self.escape_main_menu)
 
-    def unbind_keys(self):
-        # Does not unbind client level keys
-        self.unbind('<Return>')
+    def unbind_game_keys(self):
+        for bound_key in BOUND_KEYS:
+            self.unbind(bound_key)
 
     def escape_main_menu(self, event):
         self.main_menu()
