@@ -58,7 +58,7 @@ def receive_message(client_socket):
 		code = client_socket.recv(CODE_LENGTH).decode('utf-8')
 
 		if not len(header):
-			raise Exception()
+			raise Exception
 
 		message_length = int(header)
 		message = client_socket.recv(message_length).decode('utf-8')
@@ -97,8 +97,18 @@ def run_server():
 					pass
 
 			else:
-
-				code, data = receive_message(sock)
+				try:
+					code, data = receive_message(sock)
+				except:
+					print(f'(From Readables) Lost connection from {sock.getsockname()}.')
+					if sock in actionable_sockets:
+						actionable_sockets.remove(sock)
+					del players[sock]
+					sockets.remove(sock)
+					del message_queues[sock]
+					del command_queues[sock]
+					sock.close()
+					continue
 
 				if sock not in players:
 					login_name = data
@@ -110,32 +120,21 @@ def run_server():
 								broadcast(sock, f'Logged in as {players[sock].name}.')
 					else:
 						players[sock] = locations.people.Player(world, login_name)
-						print(f'New player {login_name} created by {sock.getsockname}')
+						print(f'New player {login_name} created by {sock.getsockname()}')
 						world.players.append(players[sock])
 						broadcast(sock, f'Welcome to the world, {players[sock].name}')
 
 				else:
 					if code == '01':
-						verb = data[:10]
+						verb = data[:10].strip()
 						action = data[10:]
 						print(f'Received (verb: action) {verb}: {action}')
 
 					elif code == '00':
 						pass
 
-		for sock in actionables:
-			pass
-
-			# except queue.Empty:
-			# 	actionables.remove(sock)
-			# except KeyError as e:
-			# 	print(e)
-			# else:
-			# 	pass
-				## process command
-
 		for sock in exceptionals:
-			print(f'Lost connection from {sock.getsockname()}.')
+			print(f'(From exceptionals list) Lost connection from {sock.getsockname()}.')
 			if sock in actionable_sockets:
 				actionable_sockets.remove(sock)
 			sock.close()
@@ -147,14 +146,12 @@ def timed_broadcast():
 	while True:
 		time.sleep(3)
 
-		for client in sockets:
-			if client == server:
-				continue
-			else:
-				broadcast(client, 'yo')
+		for client in players.keys():
+			broadcast(client, 'yo')
 
 
 thread_server = threading.Thread(target=run_server)
 thread_server.start()
 thread_timed = threading.Thread(target=timed_broadcast)
 thread_timed.start()
+

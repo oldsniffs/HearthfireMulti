@@ -10,6 +10,8 @@ TODO: Special text reading system, to break large strings into multiple display_
 
 TODO: Verbs come from actions.py
 
+TODO: Get listen to broadcasts to end smoothly
+
 ISSUES
 
 LISTENING FOR BROADCASTS
@@ -200,6 +202,7 @@ class ClientUI(tk.Tk):
 
         BOUND_KEYS.append('<Return>')
         self.bind('<Return>', self.process_action)
+        print('Game Keys Active')
 
     def bind_client_level_keys(self):
         self.bind('<Escape>', self.escape_main_menu)
