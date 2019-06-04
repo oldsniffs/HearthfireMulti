@@ -4,18 +4,21 @@ import threading
 import locations
 import queue
 import time
+import server_ui
 
 """
 TODO: Save and load world objects
 
-Hosts and manages the World.
+
+"""
+
+""" Development Notes
+
+server.py hosts and manages the World.
 Tracks changes to player objects and their locations associated with connected clients and notifies affected clients as
 necessary.
 Listens for commands from clients, returns a message regarding the command if needed.
 
-"""
-
-""" Notes for Development
 Thread Objects from threading have a join function - which allows multiple threads to wait for another Thread to terminate.
 Even Objects can also coordinate activity between threads.
 
@@ -61,7 +64,7 @@ def receive_message(client_socket):
 		return message
 
 	except ConnectionResetError as e:
-		print(f'**Error while receiveing command from {client_socket.getsockname()}:', e)
+		print(f'**Error while receiving command from {client_socket.getsockname()}:', e)
 		return False
 
 
@@ -71,15 +74,18 @@ def login(client):
 
 def broadcast(client, message):
 	broadcast_header = f'{len(message):<{HEADER_LENGTH}}'
+	print(f'Broadcasting to {client.getsockname()}: {broadcast_header} {message}')
 	client.send(broadcast_header.encode('utf-8') + message.encode('utf-8'))
 
 
 def run_server():
+	print('Server online: Accepting connections...')
 	while True:
 		readables, actionables, exceptionals = select.select(sockets, actionable_sockets, sockets)
 
 		for sock in readables:
 			if sock == server:
+
 				new_client, client_address = server.accept()
 				print(f'Connection from {client_address[0]}:{client_address[1]} established')
 				sockets.append(new_client)
@@ -116,7 +122,7 @@ def run_server():
 					else:
 						players[sock] = locations.people.Player(world, login_player)
 						world.players.append(players[sock])
-						broadcast(sock, f'New player {players[sock].name} created.')
+						broadcast(sock, f'Welcome to the world, {players[sock].name}')
 
 				except queue.Empty:
 					actionables.remove(sock)

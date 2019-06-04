@@ -1,15 +1,14 @@
 """
 TODO: Attempting to connect ... 3.. 2.. 1.. (for loop in range(TIMEOUT))
+TODO: Allow connect only at appropriate times
 
 TODO: Store recent user commands to recall
-TODO: Implement universal unbinding for all keys
-
-TODO: If any parse can be done client side (at least verb), client could just send command object, easing burden on server
 
 TODO: the color tag checker is reviewing all text each time text is displayed. It is changing previous tags (I think the order is based tag declaration order) and redoing all previous work each time. Have it just look at text being posted, possibly before insertion?
+TODO: Find better alternative to command_readback system
+TODO: Special text reading system, to break large strings into multiple display_text_outputs.
 
-TODO: Special text reading system, to break down strings of text from a file into multiple
-display_text_outputs. Will obsolete login function
+TODO: Verbs come from actions.py
 
 ISSUES
 
@@ -56,11 +55,48 @@ class ClientUI(tk.Tk):
         self.verb_list = world_verbs + subject_verbs + social_verbs + item_verbs + player_only_verbs
 
         self.game_screen.player_input.focus_force()
-        self.bind_game_keys()
+        self.connect_prompt()
 
-    def login(self):
+    def connect_prompt(self):
+        self.display_text_output('Enter server address to connect to a game: ')
+        self.bind_connect()
+
+    def bind_connect(self):
+        self.bind('<Return>', self.connect)
+
+    def validate_server_ip(self, server_ip):
+        valid_chars = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.']
+        for char in server_ip:
+            if char not in valid_chars:
+                self.display_text_output(f'{char} is not a valid character. Please specify a valid server address to connect to.', command_readback=True)
+                return False
+
+        self.server_ip = server_ip
+        return True
+
+    def connect(self, event):
+        server_ip = self.get_player_input()
+
+        if not self.validate_server_ip(server_ip):
+            return False
+
+        try:
+            print('trying to connect to: ', self.server_ip)
+            self.socket.connect((self.server_ip, PORT))
+        except socket.timeout as e:
+            self.display_text_output(
+                f'Attempt to connect to {self.server_ip} timed out. Please check server status and try again.')
+            self.refresh_socket()
+            print(e)
+        except socket.gaierror:
+            self.display_text_output(f'{self.server_ip} is not a valid server address.')
+        else:
+            print(f'Connected to host at {server_ip}.')
+            self.login_prompt()
+
+    def login_prompt(self):
         self.bind_login()
-        self.display_text_output('Your essence is drawn through spacetime to a particular point.')
+        self.display_text_output('Your essence is drawn through space and time to a particular point.')
         self.display_text_output('You sense your destination is nearing...')
         self.display_text_output('As you are pulled into the fire, you must decide: Who are you?')
 
@@ -71,23 +107,26 @@ class ClientUI(tk.Tk):
         # line when user hits key. This way user can "scroll" through story dialog, not have it all pop up at once.
         pass
 
-    def real_get_login(self):
-        pass
-
-    def get_login(self, event):
+    def login(self, event):
         login_name = self.get_player_input()
+
+        if not login_name.isalpha():
+            self.display_text_output('One\'s name must be speakable. Offer another...')
+            return False
 
         self.send_message(login_name)
 
         response_header = self.socket.recv(HEADER_LENGTH).decode('utf-8')
-
         if not len(response_header):
             return False
-
         response_length = int(response_header)
-        response = self.socket.recv(response_length).decode('utf-8').lower()
+        login_response = self.socket.recv(response_length).decode('utf-8')
 
-        print(response)
+        self.display_text_output(login_response)
+        self.bind_game_keys()
+        
+        listen_thread = threading.Thread(target=self.listen_for_broadcasts, name='listen thread')
+        listen_thread.start()
 
     def receive_broadcast(self):
         message_header = self.socket.recv(HEADER_LENGTH)
@@ -100,23 +139,10 @@ class ClientUI(tk.Tk):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.settimeout(TIMEOUT)
 
-    def connect(self):
-        try:
-            print('trying to connect to: ', self.server_ip)
-            self.socket.connect((self.server_ip, PORT))
-        except socket.timeout as e:
-            self.display_text_output(f'Attempt to connect to {self.server_ip} timed out. Please check server status and try again.')
-            self.refresh_socket()
-            print(e)
-        except socket.gaierror:
-            self.display_text_output(f'{self.server_ip} is not a valid server address.')
-        else:
-            self.socket.settimeout(TIMEOUT)
-            self.login()
-
     def listen_for_broadcasts(self):
+        self.socket.setblocking(True)
+
         while True:
-            # Check tag for 'special' broadcasts, run through a filter
             broadcast_header = self.socket.recv(HEADER_LENGTH)
 
             if not len(broadcast_header):
@@ -125,8 +151,6 @@ class ClientUI(tk.Tk):
 
             broadcast_length = int(broadcast_header.decode('utf-8'))
             broadcast = self.socket.recv(broadcast_length).decode('utf-8')
-
-            print(datetime.now(), broadcast)
 
             self.display_text_output(broadcast)
 
@@ -146,20 +170,6 @@ class ClientUI(tk.Tk):
         if len(words) == 0:
             self.display_text_output('Please enter something.')
             return None
-
-        if words[0] == 'connect':
-            valid_chars = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.']
-            for char in words[1]:
-                if char not in valid_chars:
-                    self.display_text_output('Please specify a valid server address to connect to.', command_readback=True) # use a different kwarg
-                    return None
-            else:
-                self.server_ip = words[1]
-                print('attempting')
-                self.display_text_output(f'Attempting to connect to {self.server_ip}', command_readback=True)
-                print(self.server_ip)
-                self.connect()
-                return None
 
         player_input = ' '.join(words)
 
@@ -187,7 +197,7 @@ class ClientUI(tk.Tk):
         self.unbind_game_keys()
 
         BOUND_KEYS.append('<Return>')
-        self.bind('<Return>', self.get_login)
+        self.bind('<Return>', self.login)
 
     def bind_game_keys(self):
         self.unbind_game_keys()
