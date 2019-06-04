@@ -145,10 +145,6 @@ class ClientUI(tk.Tk):
             try:
                 broadcast_header = self.socket.recv(HEADER_LENGTH)
 
-                if not len(broadcast_header):
-                    print('Connection closed by server')
-                    sys.exit()
-
                 broadcast_length = int(broadcast_header.decode('utf-8'))
                 broadcast = self.socket.recv(broadcast_length).decode('utf-8')
 

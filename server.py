@@ -97,10 +97,12 @@ def run_server():
 					pass
 
 			else:
-				code, data = receive_message(sock)
 
-				if code and data:
-					actionable_sockets.append(sock)
+				if sock not in players:
+					code, data = receive_message(sock)
+					if code ==
+
+
 
 				else:
 					print(f'Connection from {sock.getsockname()} lost.')
