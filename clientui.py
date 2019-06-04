@@ -58,21 +58,19 @@ class ClientUI(tk.Tk):
         self.connect_prompt()
 
     def connect_prompt(self):
-        self.display_text_output('Enter server address to connect to a game: ')
+        self.display_text_output('Hearthfire')
+        self.display_text_output('By: Big Billy Biff')
+        self.display_text_output('To join a game, enter a server address to connect to: ')
+
         self.bind_connect()
 
-    def bind_connect(self):
-        self.bind('<Return>', self.connect)
+    def login_prompt(self):
+        self.bind_login()
+        self.display_text_output('Your essence is drawn through space and time to a particular point.')
+        self.display_text_output('You sense your destination is nearing...')
+        self.display_text_output('As you are pulled into the fire, you must decide: Who are you?')
 
-    def validate_server_ip(self, server_ip):
-        valid_chars = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.']
-        for char in server_ip:
-            if char not in valid_chars:
-                self.display_text_output(f'{char} is not a valid character. Please specify a valid server address to connect to.', command_readback=True)
-                return False
-
-        self.server_ip = server_ip
-        return True
+        self.bind_login()
 
     def connect(self, event):
         server_ip = self.get_player_input()
@@ -94,21 +92,22 @@ class ClientUI(tk.Tk):
             print(f'Connected to host at {server_ip}.')
             self.login_prompt()
 
-    def login_prompt(self):
-        self.bind_login()
-        self.display_text_output('Your essence is drawn through space and time to a particular point.')
-        self.display_text_output('You sense your destination is nearing...')
-        self.display_text_output('As you are pulled into the fire, you must decide: Who are you?')
+    def validate_server_ip(self, server_ip):
+        valid_chars = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.']
+        for char in server_ip:
+            if char not in valid_chars:
+                self.display_text_output(f'{char} is not a valid character. Please specify a valid server address to connect to.', command_readback=True)
+                return False
 
-        self.bind_login()
-
-    def enter_to_continue(self):
-        # Make a function which takes function as argument. '<Return>' gets bound with a function that prints the next
-        # line when user hits key. This way user can "scroll" through story dialog, not have it all pop up at once.
-        pass
+        self.server_ip = server_ip
+        return True
 
     def login(self, event):
         login_name = self.get_player_input()
+
+        if not login_name:
+            self.display_text_output('You must give a name to incarnate.')
+            return False
 
         if not login_name.isalpha():
             self.display_text_output('One\'s name must be speakable. Offer another...')
@@ -143,19 +142,22 @@ class ClientUI(tk.Tk):
         self.socket.setblocking(True)
 
         while True:
-            broadcast_header = self.socket.recv(HEADER_LENGTH)
+            try:
+                broadcast_header = self.socket.recv(HEADER_LENGTH)
 
-            if not len(broadcast_header):
-                print('Connection closed by server')
-                sys.exit()
+                if not len(broadcast_header):
+                    print('Connection closed by server')
+                    sys.exit()
 
-            broadcast_length = int(broadcast_header.decode('utf-8'))
-            broadcast = self.socket.recv(broadcast_length).decode('utf-8')
+                broadcast_length = int(broadcast_header.decode('utf-8'))
+                broadcast = self.socket.recv(broadcast_length).decode('utf-8')
 
-            self.display_text_output(broadcast)
+                self.display_text_output(broadcast)
+            except RuntimeError as e:
+                print(f'RuntimeError: {e}. Goodbye!')
+                break
 
     def process_command(self, event):
-        # TODO: see if event argument is needed
         player_input = self.get_player_input()
         self.display_text_output(player_input, command_readback=True)
 
@@ -173,9 +175,9 @@ class ClientUI(tk.Tk):
 
         player_input = ' '.join(words)
 
-        self.send_message(player_input)
+        self.send_message(player_input, code='01')
 
-    def send_message(self, message, code ='00'):
+    def send_message(self, message, code='00'):
 
         message_header = f'{len(message):<{HEADER_LENGTH}}'
 
@@ -184,14 +186,13 @@ class ClientUI(tk.Tk):
         print(message)
         print(message)
 
-    def get_player_input(self):
-
-        player_input_text = self.game_screen.player_input.get(1.0, 'end-2l lineend')
-        self.game_screen.player_input.delete(1.0, 'end')
-
-        return player_input_text
-
     # ---- Key Bindings
+
+    def bind_connect(self):
+        self.unbind_game_keys()
+
+        BOUND_KEYS.append('<Return>')
+        self.bind('<Return>', self.connect)
 
     def bind_login(self):
         self.unbind_game_keys()
@@ -228,11 +229,22 @@ class ClientUI(tk.Tk):
         self.mainloop()
 
     def quit(self):
-        self.destroy()
         sys.exit()
+        self.destroy()
+
 
     # ---- Text Display
-    def display_location(self, location):
+
+    def get_player_input(self):
+
+        player_input_text = self.game_screen.player_input.get(1.0, 'end-2l lineend')
+        self.game_screen.player_input.delete(1.0, 'end')
+
+        return player_input_text
+
+    def enter_to_continue(self):
+        # Make a function which takes function as argument. '<Return>' gets bound with a function that prints the next
+        # line when user hits key. This way user can "scroll" through story dialog, not have it all pop up at once.
         pass
 
     def display_text_output(self, text, pattern1=None, tag1=None, pattern2=None, tag2=None, command_readback=False,
@@ -255,18 +267,6 @@ class ClientUI(tk.Tk):
                 self.game_screen.output_display.apply_tag_to_pattern(e, 'dark-turquoise')
             for i_n in self.player.location.items:
                 self.game_screen.output_display.apply_tag_to_pattern(i_n.name, 'salmon')
-
-    # ---- Text Input
-    #
-    # def combine_2_word_terms(self, a_list):
-    #     count = 0
-    #     while count < len(a_list) - 1:
-    #         print(' '.join((a_list[count], a_list[count + 1])))
-    #         if ' '.join((a_list[count], a_list[
-    #             count + 1])) in locations.people.items.all_terminal_item_names + locations.people.all_people_names + self.verblist:
-    #             a_list[count] = ' '.join((a_list[count], a_list[count + 1]))
-    #             del a_list[count + 1]
-    #         count += 1
 
 
 class GameScreen(tk.Frame):

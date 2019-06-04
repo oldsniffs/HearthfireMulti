@@ -8,7 +8,7 @@ import server_ui
 
 """
 TODO: Save and load world objects
-
+TODO: Lost socket function to close out connection, remove temp assets
 
 """
 
@@ -42,6 +42,7 @@ server.listen(5)
 sockets = [server]
 actionable_sockets = []
 players = {}  # {client: player}
+message_queues = {}
 command_queues = {}
 online_player_locations = []
 
@@ -61,10 +62,10 @@ def receive_message(client_socket):
 		message_length = int(header)
 		message = client_socket.recv(message_length).decode('utf-8')
 
-		return message
+		return code, message
 
 	except ConnectionResetError as e:
-		print(f'**Error while receiving command from {client_socket.getsockname()}:', e)
+		print(f'ConnectionResetError from {client_socket.getsockname()}:', e)
 		return False
 
 
@@ -89,18 +90,17 @@ def run_server():
 				new_client, client_address = server.accept()
 				print(f'Connection from {client_address[0]}:{client_address[1]} established')
 				sockets.append(new_client)
+				message_queues[new_client] = queue.Queue()
 				command_queues[new_client] = queue.Queue()
 
 				if new_client not in players:
 					pass
 
 			else:
-				client_message = receive_message(sock)
+				code, data = receive_message(sock)
 
-				if client_message:
-					command_queues[sock].put(client_message)
-					if sock not in actionable_sockets:
-						actionable_sockets.append(sock)
+				if code and data:
+					actionable_sockets.append(sock)
 
 				else:
 					print(f'Connection from {sock.getsockname()} lost.')
@@ -108,19 +108,22 @@ def run_server():
 						actionable_sockets.remove(sock)
 					sock.close()
 					sockets.remove(sock)
+					del message_queues[sock]
 					del command_queues[sock]
 
 		for sock in actionables:
 			if sock not in players:
 				try:
-					login_player = command_queues[sock].get_nowait()
+					login_player = message_queues[sock].get_nowait()
 					if login_player in [player.name for player in world.players]:
 						for player in world.players:
 							if login_player == player.name:
 								players[sock] = player
+								print(f'{sock.getsockname} logged in as {players[sock].name}')
 								broadcast(sock, f'Logged in as {players[sock].name}.')
 					else:
 						players[sock] = locations.people.Player(world, login_player)
+						print(f'New player {login_player} created by {sock.getsockname}')
 						world.players.append(players[sock])
 						broadcast(sock, f'Welcome to the world, {players[sock].name}')
 
@@ -129,7 +132,7 @@ def run_server():
 
 			else:
 				try:
-					next_command = command_queues[sock].get_nowait()
+					code, data
 
 				except queue.Empty:
 					actionables.remove(sock)
@@ -145,7 +148,21 @@ def run_server():
 				actionable_sockets.remove(sock)
 			sock.close()
 			sockets.remove(sock)
+			del message_queues[sock]
 			del command_queues[sock]
 
+def timed_broadcast():
+	while True:
+		time.sleep(3)
 
-run_server()
+		for client in sockets:
+			if client == server:
+				continue
+			else:
+				broadcast(client, 'yo')
+
+
+thread_server = threading.Thread(target=run_server)
+thread_server.start()
+thread_timed = threading.Thread(target=timed_broadcast)
+thread_timed.start()
