@@ -19,13 +19,14 @@ recv keep cpu usage acceptable?
 """
 
 import tkinter as tk
-from actions import *
+import actions
 import sys
 import socket
 import datetime
 import threading
 
 HEADER_LENGTH = 10
+VERB_HEADER_LENGTH = 10
 
 PORT = 1234
 TIMEOUT = 1
@@ -51,8 +52,6 @@ class ClientUI(tk.Tk):
 
         self.game_screen = GameScreen(self)
         self.game_screen.grid(row=0, column=0)
-
-        self.verb_list = world_verbs + subject_verbs + social_verbs + item_verbs + player_only_verbs
 
         self.game_screen.player_input.focus_force()
         self.connect_prompt()
@@ -144,7 +143,6 @@ class ClientUI(tk.Tk):
         while True:
             try:
                 broadcast_header = self.socket.recv(HEADER_LENGTH)
-
                 broadcast_length = int(broadcast_header.decode('utf-8'))
                 broadcast = self.socket.recv(broadcast_length).decode('utf-8')
 
@@ -153,7 +151,7 @@ class ClientUI(tk.Tk):
                 print(f'RuntimeError: {e}. Goodbye!')
                 break
 
-    def process_command(self, event):
+    def process_action(self, event):
         player_input = self.get_player_input()
         self.display_text_output(player_input, command_readback=True)
 
@@ -169,18 +167,19 @@ class ClientUI(tk.Tk):
             self.display_text_output('Please enter something.')
             return None
 
-        player_input = ' '.join(words)
+        if words[0] in actions.verb_list:
+            self.send_message(f'{words[0]:<{VERB_HEADER_LENGTH}}'+' '.join(words[1:]), code='01')
 
-        self.send_message(player_input, code='01')
+        else:
+            self.display_text_output(f'You want to {words[0]}? I don\'t even know what that is...')
+            return False
 
     def send_message(self, message, code='00'):
 
         message_header = f'{len(message):<{HEADER_LENGTH}}'
 
+        print(f'Sending: {message}')
         self.socket.send(message_header.encode('utf-8') + code.encode('utf-8') + message.encode('utf-8'))
-
-        print(message)
-        print(message)
 
     # ---- Key Bindings
 
@@ -200,7 +199,7 @@ class ClientUI(tk.Tk):
         self.unbind_game_keys()
 
         BOUND_KEYS.append('<Return>')
-        self.bind('<Return>', self.process_command)
+        self.bind('<Return>', self.process_action)
 
     def bind_client_level_keys(self):
         self.bind('<Escape>', self.escape_main_menu)

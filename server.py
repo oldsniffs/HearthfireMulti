@@ -30,6 +30,7 @@ Question of using a Client class: Operations will be more granular with a class.
 """
 
 HEADER_LENGTH = 10
+VERB_HEADER_LENGTH = 10
 CODE_LENGTH = 2
 HEADER_AND_CODE = HEADER_LENGTH + 2
 
@@ -57,7 +58,7 @@ def receive_message(client_socket):
 		code = client_socket.recv(CODE_LENGTH).decode('utf-8')
 
 		if not len(header):
-			return False
+			raise Exception()
 
 		message_length = int(header)
 		message = client_socket.recv(message_length).decode('utf-8')
@@ -66,8 +67,7 @@ def receive_message(client_socket):
 
 	except ConnectionResetError as e:
 		print(f'ConnectionResetError from {client_socket.getsockname()}:', e)
-		return False
-
+		return None, None
 
 def login(client):
 	pass
@@ -98,51 +98,41 @@ def run_server():
 
 			else:
 
+				code, data = receive_message(sock)
+
 				if sock not in players:
-					code, data = receive_message(sock)
-					if code ==
-
-
-
-				else:
-					print(f'Connection from {sock.getsockname()} lost.')
-					if sock in actionable_sockets:
-						actionable_sockets.remove(sock)
-					sock.close()
-					sockets.remove(sock)
-					del message_queues[sock]
-					del command_queues[sock]
-
-		for sock in actionables:
-			if sock not in players:
-				try:
-					login_player = message_queues[sock].get_nowait()
-					if login_player in [player.name for player in world.players]:
+					login_name = data
+					if login_name in [player.name for player in world.players]:
 						for player in world.players:
-							if login_player == player.name:
+							if login_name == player.name:
 								players[sock] = player
 								print(f'{sock.getsockname} logged in as {players[sock].name}')
 								broadcast(sock, f'Logged in as {players[sock].name}.')
 					else:
-						players[sock] = locations.people.Player(world, login_player)
-						print(f'New player {login_player} created by {sock.getsockname}')
+						players[sock] = locations.people.Player(world, login_name)
+						print(f'New player {login_name} created by {sock.getsockname}')
 						world.players.append(players[sock])
 						broadcast(sock, f'Welcome to the world, {players[sock].name}')
 
-				except queue.Empty:
-					actionables.remove(sock)
-
-			else:
-				try:
-					code, data
-
-				except queue.Empty:
-					actionables.remove(sock)
-				except KeyError as e:
-					print(e)
 				else:
-					pass
-					# process command
+					if code == '01':
+						verb = data[:10]
+						action = data[10:]
+						print(f'Received (verb: action) {verb}: {action}')
+
+					elif code == '00':
+						pass
+
+		for sock in actionables:
+			pass
+
+			# except queue.Empty:
+			# 	actionables.remove(sock)
+			# except KeyError as e:
+			# 	print(e)
+			# else:
+			# 	pass
+				## process command
 
 		for sock in exceptionals:
 			print(f'Lost connection from {sock.getsockname()}.')
