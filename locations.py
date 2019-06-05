@@ -110,7 +110,7 @@ class Location:
 		south_xyz = (self.xyz[0], self.xyz[1]-1, self.xyz[2])
 		north_xyz = (self.xyz[0], self.xyz[1]+1, self.xyz[2])
 
-		if west_xyz in self.zone.map.keys():   # Checks should pass even with different z value. Z changes take skill to traverse
+		if west_xyz in self.zone.map.keys():
 			exits.append('west')
 		if east_xyz in self.zone.map.keys():
 			exits.append('east')
@@ -120,7 +120,7 @@ class Location:
 			exits.append('north')
 
 		for se in self.special_exits:
-			if se.detected == True:
+			if se.detected:
 				exits.append(se.name)
 
 		return exits

@@ -46,7 +46,7 @@ class ClientUI(tk.Tk):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.settimeout(TIMEOUT)
 
-        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.protocol("WM_DELETE_WINDOW", self.quit)
 
         self.player_name = ''
 
@@ -62,7 +62,7 @@ class ClientUI(tk.Tk):
 
     def connect_prompt(self):
         self.display_text_output('Hearthfire')
-        self.display_text_output('By: Big Billy Biff')
+        self.display_text_output('By Biff Willaburs')
         self.display_text_output('To join a game, enter a server address to connect to: ')
 
         self.bind_connect()
@@ -231,13 +231,6 @@ class ClientUI(tk.Tk):
         self.mainloop()
 
     def quit(self):
-        self.socket.shutdown(socket.SHUT_WR)
-        self.destroy()
-        quit()
-
-    def on_closing(self):
-        print('bye')
-
         self.socket.shutdown(socket.SHUT_WR)
         self.destroy()
         quit()
