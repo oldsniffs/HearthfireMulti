@@ -131,8 +131,11 @@ def run_server():
 						verb = data[:10].strip()
 						action = data[10:]
 						print(f'Received (verb: action) {verb}: {action}')
-						player_action = actions.parse_player_action(player, verb, action)
-						actions.execute_player_action(player_action)
+
+						player_action = actions.parse_player_action(players[sock], verb, action)
+						response = actions.execute_player_action(player_action)
+						if response:
+							broadcast(sock, response)
 
 					elif code == '00':
 						pass

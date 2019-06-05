@@ -36,15 +36,55 @@ def parse_player_action(player, verb, action):
 	player_action = Action()
 
 	player_action.subject = player
-	player_action.action = verb
+	player_action.verb = verb
 
+	# strip() in case value is blank space. may not be necessary
 	words = action.split()
 
-	if len(words) == 2:
-		player_action.target = words(1)
+	# I would check action instead of words, but unsure about blank space.
+	if not words:
+		return player_action
 
+	if len(words) == 1:
+		print(f'assigning {words[0]} as target')
+		player_action.target = words[0]
 
-	# combine 2 word terms
+	return player_action
+
 
 def execute_player_action(player_action):
-	pass
+
+	print (f'Subject: {player_action.subject}\nVerb: {player_action.verb}\nTarget: {player_action.target}')
+
+	if player_action.verb == 'look':
+		return player_action.subject.location.describe()
+
+	if player_action.verb == 'go':
+		print('Executing "go"')
+		if not player_action.target:
+			print('returning where do you want to go')
+			return 'Where do you want to go?'
+
+		elif player_action.target in ['n', 'e', 'w', 's', 'north', 'east', 'west', 'south']:
+			if player_action.target == 'n':
+				player_action.target = 'north'
+			elif player_action.target == 'e':
+				player_action.target = 'east'
+			elif player_action.target == 'w':
+				player_action.target = 'west'
+			elif player_action.target == 's':
+				player_action.target = 'south'
+
+			if player_action.target in player_action.subject.location.get_exits():
+				player_action.subject.move(direction=player_action.target)
+				return player_action.subject.location.describe()
+			else:
+				return 'You can\'t go that way!'
+
+		elif player_action.target:
+			for es in player_action.subject.location.special_exits:
+				if player_action.target == es.name:
+					player_action.subject.move(exit=es)
+
+		else:
+			return 'I don\'t understand where you\'re trying to go.'
