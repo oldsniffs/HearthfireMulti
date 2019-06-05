@@ -12,6 +12,7 @@ import server_ui
 TODO: Save and load world objects
 TODO: Lost socket function to close out connection, remove temp assets
 
+TODO: Login function
 """
 
 """ Development Notes
@@ -37,6 +38,7 @@ CODE_LENGTH = 2
 HEADER_AND_CODE = HEADER_LENGTH + 2
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server_address = '10.0.0.43'
 port = 1234
 server.bind((server_address, port))
@@ -71,9 +73,6 @@ def receive_message(client_socket):
 		print(f'ConnectionResetError from {client_socket.getsockname()}:', e)
 		return None, None
 
-def login(client):
-	pass
-
 
 def broadcast(client, message):
 	broadcast_header = f'{len(message):<{HEADER_LENGTH}}'
@@ -101,19 +100,24 @@ def run_server():
 			elif sock in sockets:
 				try:
 					code, data = receive_message(sock)
-				except:
-					print(f'(From Readables) Lost connection from {sock.getsockname()}.')
-					if sock in actionable_sockets:
-						actionable_sockets.remove(sock)
-					del players[sock]
-					sockets.remove(sock)
-					del message_queues[sock]
-					del command_queues[sock]
-					sock.close()
+				except Exception as e:
+					print(e)
+					close_client(sock)
 					continue
 
 				if sock not in players:
 					login_name = data
+					if not login_name:
+						print(f'(From Readables) Lost connection from {sock.getsockname()}.')
+						if sock in actionable_sockets:
+							actionable_sockets.remove(sock)
+						if sock in players:
+							del players[sock]
+						sockets.remove(sock)
+						del message_queues[sock]
+						del command_queues[sock]
+						sock.close()
+
 					if login_name in [player.name for player in world.players]:
 						for player in world.players:
 							if login_name == player.name:
@@ -148,6 +152,18 @@ def run_server():
 			sockets.remove(sock)
 			del message_queues[sock]
 			del command_queues[sock]
+
+
+def close_client(sock):
+	print(f'Lost connection from {sock.getsockname()}.')
+	if sock in actionable_sockets:
+		actionable_sockets.remove(sock)
+	if sock in players:
+		del players[sock]
+	sockets.remove(sock)
+	del message_queues[sock]
+	del command_queues[sock]
+	sock.close()
 
 def timed_broadcast():
 	while True:

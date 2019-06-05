@@ -46,6 +46,8 @@ class ClientUI(tk.Tk):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.settimeout(TIMEOUT)
 
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
         self.player_name = ''
 
         self.title('Hearthfire')
@@ -145,6 +147,8 @@ class ClientUI(tk.Tk):
         while True:
             try:
                 broadcast_header = self.socket.recv(HEADER_LENGTH)
+                if not broadcast_header:
+                    return
                 broadcast_length = int(broadcast_header.decode('utf-8'))
                 broadcast = self.socket.recv(broadcast_length).decode('utf-8')
 
@@ -227,7 +231,16 @@ class ClientUI(tk.Tk):
         self.mainloop()
 
     def quit(self):
+        self.socket.shutdown(socket.SHUT_WR)
         self.destroy()
+        quit()
+
+    def on_closing(self):
+        print('bye')
+
+        self.socket.shutdown(socket.SHUT_WR)
+        self.destroy()
+        quit()
 
     # ---- Text Display
 
