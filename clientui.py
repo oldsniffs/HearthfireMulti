@@ -125,8 +125,8 @@ class ClientUI(tk.Tk):
         self.display_text_output(login_response)
         self.bind_game_keys()
         
-        listen_thread = threading.Thread(target=self.listen_for_broadcasts, name='listen thread')
-        listen_thread.start()
+        self.listen_thread = threading.Thread(target=self.listen_for_broadcasts, name='listen thread')
+        self.listen_thread.start()
 
     def receive_broadcast(self):
         message_header = self.socket.recv(HEADER_LENGTH)
@@ -151,7 +151,7 @@ class ClientUI(tk.Tk):
                 self.display_text_output(broadcast)
             except RuntimeError as e:
                 print(f'RuntimeError: {e}. Goodbye!')
-                break
+                return
 
     def process_action(self, event):
         player_input = self.get_player_input()
@@ -227,9 +227,7 @@ class ClientUI(tk.Tk):
         self.mainloop()
 
     def quit(self):
-        sys.exit()
         self.destroy()
-
 
     # ---- Text Display
 

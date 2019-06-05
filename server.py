@@ -1,9 +1,11 @@
 import select
 import socket
 import threading
-import locations
 import queue
 import time
+
+import locations
+import actions
 import server_ui
 
 """
@@ -96,7 +98,7 @@ def run_server():
 				if new_client not in players:
 					pass
 
-			else:
+			elif sock in sockets:
 				try:
 					code, data = receive_message(sock)
 				except:
@@ -129,6 +131,8 @@ def run_server():
 						verb = data[:10].strip()
 						action = data[10:]
 						print(f'Received (verb: action) {verb}: {action}')
+						player_action = actions.parse_player_action(player, verb, action)
+						actions.execute_player_action(player_action)
 
 					elif code == '00':
 						pass
@@ -152,6 +156,6 @@ def timed_broadcast():
 
 thread_server = threading.Thread(target=run_server)
 thread_server.start()
-thread_timed = threading.Thread(target=timed_broadcast)
-thread_timed.start()
+# thread_timed = threading.Thread(target=timed_broadcast)
+# thread_timed.start()
 

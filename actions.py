@@ -12,7 +12,7 @@ verb_list = world_verbs + subject_verbs + social_verbs + item_verbs + player_onl
 ALL_VALID_TARGETS = ''
 
 
-class ActionCommand:
+class Action:
 	def __init__(self):
 		self.subject = None
 		self.verb = None
@@ -31,10 +31,20 @@ def reassign_if_move_direction(action_command):
 		action_command.verb = 'go'
 
 
-def parse_player_action_command(player, command_message):
+def parse_player_action(player, verb, action):
+
+	player_action = Action()
+
+	player_action.subject = player
+	player_action.action = verb
+
+	words = action.split()
+
+	if len(words) == 2:
+		player_action.target = words(1)
 
 
-	player_command = ActionCommand()
+	# combine 2 word terms
 
-	player_command.subject = player
-
+def execute_player_action(player_action):
+	pass
