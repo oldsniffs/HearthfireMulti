@@ -267,6 +267,8 @@ class ClientUI(tk.Tk):
                 self.game_screen.output_display.apply_tag_to_pattern(i_n.name, 'salmon')
 
 
+
+
 class GameScreen(tk.Frame):
 
     def __init__(self, parent):

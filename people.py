@@ -150,7 +150,10 @@ class Person():
 			self.location = self.location.zone.map[new_xyz]
 			self.location.denizens.append(self)
 
-	# ---- Supporting methods ----
+	def say(self, speech):
+		self.world.world_events
+
+	# ---- Support methods ----
 
 	def add_to_denizens(self):
 		self.locations.denizens.append(self)
@@ -234,11 +237,11 @@ class Player(Person):
 		super().__init__(world, name)
 		self.inventory = [items.Stanget()]
 
-
 	def show_location(self):
 		current_location = 'You are at ' + self.location.zone.name + ', ' + self.location.name + '.'
 		return current_location
 
+	def generate_player(self):
 
 # ---- if __name__ == '__main__' ----
 

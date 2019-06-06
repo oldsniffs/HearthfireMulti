@@ -55,6 +55,9 @@ world_events = []
 world = locations.World()
 
 
+def run_world(world):
+	pass
+
 def receive_message(client_socket):
 
 	try:
