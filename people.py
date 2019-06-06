@@ -242,6 +242,7 @@ class Player(Person):
 		return current_location
 
 	def generate_player(self):
+		pass
 
 # ---- if __name__ == '__main__' ----
 
