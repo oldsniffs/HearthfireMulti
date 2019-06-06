@@ -71,6 +71,7 @@ class Person():
 
 		self.inventory = []
 
+		self.location.denizens.append(self)
 
 		# Biometrics
 		self.gender = ''
@@ -145,9 +146,9 @@ class Person():
 			if direction == 'south':
 				self.personal_xyz[1] -= 1
 			new_xyz = tuple(self.personal_xyz)
+			self.location.denizens.remove(self)
 			self.location = self.location.zone.map[new_xyz]
-			# TODO: Update denizen lists here
-
+			self.location.denizens.append(self)
 
 	# ---- Supporting methods ----
 
@@ -227,13 +228,12 @@ class Person():
 		del state['game']
 		return state
 
-	
 
 class Player(Person):
-
 	def __init__(self, world, name):
 		super().__init__(world, name)
 		self.inventory = [items.Stanget()]
+
 
 	def show_location(self):
 		current_location = 'You are at ' + self.location.zone.name + ', ' + self.location.name + '.'

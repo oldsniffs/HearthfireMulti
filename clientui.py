@@ -22,7 +22,6 @@ recv keep cpu usage acceptable?
 
 import tkinter as tk
 import actions
-import sys
 import socket
 import datetime
 import threading
@@ -31,7 +30,7 @@ HEADER_LENGTH = 10
 VERB_HEADER_LENGTH = 10
 
 PORT = 1234
-TIMEOUT = 1
+TIMEOUT = 3
 
 INPUT = ''
 LOGGING_IN = True
@@ -45,10 +44,6 @@ class ClientUI(tk.Tk):
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.settimeout(TIMEOUT)
-
-        self.protocol("WM_DELETE_WINDOW", self.quit)
-
-        self.player_name = ''
 
         self.title('Hearthfire')
         self.geometry('1500x800')
@@ -70,7 +65,7 @@ class ClientUI(tk.Tk):
     def login_prompt(self):
         self.bind_login()
         self.display_text_output('Your essence is drawn through space and time to a particular point.')
-        self.display_text_output('You sense your destination is nearing...')
+        self.display_text_output('You se nse your destination is nearing...')
         self.display_text_output('As you are pulled into the fire, you must decide: Who are you?')
 
         self.bind_login()
@@ -231,7 +226,8 @@ class ClientUI(tk.Tk):
         self.mainloop()
 
     def quit(self):
-        self.socket.shutdown(socket.SHUT_WR)
+        if self.socket:
+            self.socket.shutdown(socket.SHUT_WR)
         self.destroy()
         quit()
 

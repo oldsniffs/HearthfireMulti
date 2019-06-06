@@ -196,7 +196,12 @@ class Location:
 						items_description = items_description + 'and a ' + i.name+' here.'
 				single_count -= 1
 
-		best_description = self.zone.name + ', ' + self.name + ': ' + self.physical_description  + items_description +'\nAvailable exits: ' + ', '.join(self.capitalize_exits()) + '.'
+		denizens_description = ''
+		for denizen in self.denizens:
+			print(denizen.name)
+			denizens_description = denizens_description + denizen.name
+
+		best_description = self.zone.name + ', ' + self.name + ': ' + self.physical_description  + items_description +'\nAvailable exits: ' + ', '.join(self.capitalize_exits()) + '.' + f'\n' + denizens_description
 
 		return best_description
 

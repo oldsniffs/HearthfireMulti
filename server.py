@@ -39,7 +39,7 @@ HEADER_AND_CODE = HEADER_LENGTH + 2
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_address = '10.0.0.43'
+server_address = ''
 port = 1234
 server.bind((server_address, port))
 server.listen(5)
@@ -58,6 +58,7 @@ world = locations.World()
 def receive_message(client_socket):
 
 	try:
+		print(client_socket)
 		header = client_socket.recv(HEADER_LENGTH).decode('utf-8')
 		code = client_socket.recv(CODE_LENGTH).decode('utf-8')
 
@@ -82,6 +83,7 @@ def broadcast(client, message):
 
 def run_server():
 	print('Server online: Accepting connections...')
+	print(socket.gethostbyname(socket.gethostname()))
 	while True:
 		readables, actionables, exceptionals = select.select(sockets, actionable_sockets, sockets)
 
@@ -164,6 +166,7 @@ def close_client(sock):
 	del message_queues[sock]
 	del command_queues[sock]
 	sock.close()
+
 
 def timed_broadcast():
 	while True:
