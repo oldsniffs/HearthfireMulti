@@ -102,8 +102,6 @@ class Person():
 			self.weight = 180
 			self.height = 72
 
-
-
 	def describe(self):
 		pass
 		# Height, weight, etc adjectives based on biometric values. Clothes as well?
@@ -116,6 +114,10 @@ class Person():
 
 # ---- Actions ----
 
+	def detect_action(self, hidden_action):
+		# Checks if self can detect an action occurring within visible range.
+		pass
+
 	def get_item(self, item, target=None): # Needs source argument for containers, people, not just taking from location items
 		# Needs to handle quantities: get stangets, get 2 stangets
 		if target==None:
@@ -125,7 +127,6 @@ class Person():
 		else:
 			self.inventory.append(item)
 			target.items.remove(item)
-
 
 	def eat(self, food):
 		pass

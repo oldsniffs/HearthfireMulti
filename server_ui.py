@@ -27,7 +27,6 @@ class Server(tk.Tk):
         self.save_button.pack()
         self.save_entry.pack()
 
-
     def toggle_save_button(self, *args):
         x = self.save_entry_var.get()
         if len(x) > 0:

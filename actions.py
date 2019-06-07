@@ -54,10 +54,13 @@ def parse_player_action(player, verb, action):
 
 def execute_player_action(player_action):
 
+	# TODO: A covert system. Subject attempts to do something hidden, a check is performed for others to view it
+
 	print (f'Subject: {player_action.subject}\nVerb: {player_action.verb}\nTarget: {player_action.target}')
 
 	if player_action.verb == 'look':
 		return player_action.subject.location.describe()
+
 
 	if player_action.verb == 'go':
 		print('Executing "go"')

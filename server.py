@@ -54,9 +54,17 @@ online_player_locations = []
 world_events = []
 world = locations.World()
 
+world_thread = threading.Thread(target=run_world, name='world thread')
+world_thread.start()
+
+server_thread = threading.Thread(target=run_server, name='server thread')
+server_thread.start()
+
+
 
 def run_world(world):
 	pass
+
 
 def receive_message(client_socket):
 
@@ -94,6 +102,7 @@ def run_server():
 			if sock == server:
 
 				new_client, client_address = server.accept()
+				new_client.setblocking(False)
 				print(f'Connection from {client_address[0]}:{client_address[1]} established')
 				sockets.append(new_client)
 				message_queues[new_client] = queue.Queue()
@@ -142,9 +151,13 @@ def run_server():
 						print(f'Received (verb: action) {verb}: {action}')
 
 						player_action = actions.parse_player_action(players[sock], verb, action)
-						response = actions.execute_player_action(player_action)
+						response, observed_message = actions.execute_player_action(player_action)
 						if response:
 							broadcast(sock, response)
+						if observed_message:
+							for s in [s for s in sockets if s != sock]:
+								if players[s].detect_action(player_action):
+									broadcast(observed_message)
 
 					elif code == '00':
 						pass
@@ -179,8 +192,8 @@ def timed_broadcast():
 			broadcast(client, 'yo')
 
 
-thread_server = threading.Thread(target=run_server)
-thread_server.start()
-# thread_timed = threading.Thread(target=timed_broadcast)
-# thread_timed.start()
+world_thread = threading.Thread(target=run_world, name='world thread')
+world_thread.start()
 
+server_thread = threading.Thread(target=run_server, name='server thread')
+server_thread.start()

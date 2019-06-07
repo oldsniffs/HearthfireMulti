@@ -3,6 +3,7 @@
 import people
 import os
 import xml.etree.ElementTree as et
+import queue
 
 base_path = os.path.dirname(os.path.realpath(__file__))
 locations_xml = os.path.join(base_path, 'data\\locations.xml')
@@ -14,6 +15,8 @@ class World:
 	def __init__(self):
 		self.map = {}
 		self.load_map()
+
+		self.npc_action_timers = queue.Queue
 
 		self.players = [] # Player objects. This is where server.py looks for players to assign to client sockets
 		self.players.append(people.Player(self, 'Fred'))

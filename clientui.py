@@ -1,4 +1,7 @@
 """
+Priority:
+TODO: locations folder. xml files for (probably) individual zones
+
 TODO: Attempting to connect ... 3.. 2.. 1.. (for loop in range(TIMEOUT))
 TODO: Allow connect only at appropriate times
 
@@ -353,3 +356,8 @@ class OutputText(tk.Text):
             self.mark_set('matchStart', index)
             self.mark_set('matchEnd', '%s+%sc' % (index, count.get()))
             self.tag_add(tag, 'matchStart', 'matchEnd')
+
+'''
+Documentation:
+
+'''
