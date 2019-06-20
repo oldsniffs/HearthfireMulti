@@ -1,7 +1,4 @@
-import socket
-import network
 import clientui
-import threading
 
 
 def main():

@@ -5,6 +5,8 @@ import os
 import xml.etree.ElementTree as et
 import queue
 
+# TODO: Can the following code be moved into World.load_map ?
+
 base_path = os.path.dirname(os.path.realpath(__file__))
 locations_xml = os.path.join(base_path, 'data\\locations.xml')
 locations_tree = et.parse(locations_xml)
@@ -16,9 +18,10 @@ class World:
 		self.map = {}
 		self.load_map()
 
-		self.npc_action_timers = queue.Queue
+		self.high_priority_timers = queue.Queue()
+		self.low_priority_timers = queue.Queue()
 
-		self.players = [] # Player objects. This is where server.py looks for players to assign to client sockets
+		self.players = []
 		self.players.append(people.Player(self, 'Fred'))
 
 		self.populate()

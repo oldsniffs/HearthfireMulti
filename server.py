@@ -1,199 +1,61 @@
-import select
-import socket
-import threading
-import queue
-import time
+import tkinter as tk
+from tkinter import font as tkfont
+import shelve
+import os
 
+import network
 import locations
-import actions
-import server_ui
-
-"""
-TODO: Save and load world objects
-TODO: Lost socket function to close out connection, remove temp assets
-
-TODO: Login function
-"""
-
-""" Development Notes
-
-server.py hosts and manages the World.
-Tracks changes to player objects and their locations associated with connected clients and notifies affected clients as
-necessary.
-Listens for commands from clients, returns a message regarding the command if needed.
-
-Thread Objects from threading have a join function - which allows multiple threads to wait for another Thread to terminate.
-Even Objects can also coordinate activity between threads.
-
-Question of checking client sockets with server socket: Splitting them with the idea
-that not checking the server socket for (rare) new connections will keep client scanning
-more brisk. However, if all was done in same loop, no threading overhead would be generated.
-
-Question of using a Client class: Operations will be more granular with a class. 
-"""
-
-HEADER_LENGTH = 10
-VERB_HEADER_LENGTH = 10
-CODE_LENGTH = 2
-HEADER_AND_CODE = HEADER_LENGTH + 2
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_address = ''
-port = 1234
-server.bind((server_address, port))
-server.listen(5)
-
-sockets = [server]
-actionable_sockets = []
-players = {}  # {client: player}
-message_queues = {}
-command_queues = {}
-online_player_locations = []
-
-world_events = []
-world = locations.World()
-
-world_thread = threading.Thread(target=run_world, name='world thread')
-world_thread.start()
-
-server_thread = threading.Thread(target=run_server, name='server thread')
-server_thread.start()
 
 
+class ServerApp(tk.Tk):
+    def __init__(self):
+        self.world = None
 
-def run_world(world):
-	pass
+        self.title('Hearthfire Server')
+        self.geometry('1500x800')
+        self.config(background='black')
 
-
-def receive_message(client_socket):
-
-	try:
-		print(client_socket)
-		header = client_socket.recv(HEADER_LENGTH).decode('utf-8')
-		code = client_socket.recv(CODE_LENGTH).decode('utf-8')
-
-		if not len(header):
-			raise Exception
-
-		message_length = int(header)
-		message = client_socket.recv(message_length).decode('utf-8')
-
-		return code, message
-
-	except ConnectionResetError as e:
-		print(f'ConnectionResetError from {client_socket.getsockname()}:', e)
-		return None, None
+        self.current_game = 'No game active'
+        self.create_widgets()
 
 
-def broadcast(client, message):
-	broadcast_header = f'{len(message):<{HEADER_LENGTH}}'
-	print(f'Broadcasting to {client.getsockname()}: {broadcast_header} {message}')
-	client.send(broadcast_header.encode('utf-8') + message.encode('utf-8'))
+class Menu(tk.Frame):
+    def __init__(self, parent):
 
+        self.base_path = os.path.dirname(os.path.realpath(__file__))
+        self.save_path = os.path.join(self.base_path, 'saves')
+        if not os.path.exists(self.save_path):
+            os.makedirs(self.save_path)
 
-def run_server():
-	print('Server online: Accepting connections...')
-	print(socket.gethostbyname(socket.gethostname()))
-	while True:
-		readables, actionables, exceptionals = select.select(sockets, actionable_sockets, sockets)
+    def new_world(self):
+        # Stop the world event watcher loop
+        self.world = locations.World()
+        network.run_world(self.world)
+        network.run_server(self.world)
 
-		for sock in readables:
-			if sock == server:
+    def save_world(self):
+        # Stop world timer
+        save_name = self.save_name_entry.get()
 
-				new_client, client_address = server.accept()
-				new_client.setblocking(False)
-				print(f'Connection from {client_address[0]}:{client_address[1]} established')
-				sockets.append(new_client)
-				message_queues[new_client] = queue.Queue()
-				command_queues[new_client] = queue.Queue()
+        d = shelve.open(self.save_path + '/' + save_name)
+        d['world'] = self.world
 
-				if new_client not in players:
-					pass
+    def create_widgets(self):
 
-			elif sock in sockets:
-				try:
-					code, data = receive_message(sock)
-				except Exception as e:
-					print(e)
-					close_client(sock)
-					continue
+        self.save_frame = tk.Frame()
+        self.default_frame = tk.Frame()
 
-				if sock not in players:
-					login_name = data
-					if not login_name:
-						print(f'(From Readables) Lost connection from {sock.getsockname()}.')
-						if sock in actionable_sockets:
-							actionable_sockets.remove(sock)
-						if sock in players:
-							del players[sock]
-						sockets.remove(sock)
-						del message_queues[sock]
-						del command_queues[sock]
-						sock.close()
+        self.save_entry_var = tk.StringVar()
+        self.save_entry_var.trace('w', self.toggle_save_button)
+        self.save_entry = tk.Entry(self.save_frame, textvariable=self.save_entry_var)
+        self.save_button = tk.Button(self.save_frame, text='Save World', command=self.save_world)
 
-					if login_name in [player.name for player in world.players]:
-						for player in world.players:
-							if login_name == player.name:
-								players[sock] = player
-								print(f'{sock.getsockname} logged in as {players[sock].name}')
-								broadcast(sock, f'Logged in as {players[sock].name}.')
-					else:
-						players[sock] = locations.people.Player(world, login_name)
-						print(f'New player {login_name} created by {sock.getsockname()}')
-						world.players.append(players[sock])
-						broadcast(sock, f'Welcome to the world, {players[sock].name}')
+        self.save_button.pack()
+        self.save_entry.pack()
 
-				else:
-					if code == '01':
-						verb = data[:10].strip()
-						action = data[10:]
-						print(f'Received (verb: action) {verb}: {action}')
-
-						player_action = actions.parse_player_action(players[sock], verb, action)
-						response, observed_message = actions.execute_player_action(player_action)
-						if response:
-							broadcast(sock, response)
-						if observed_message:
-							for s in [s for s in sockets if s != sock]:
-								if players[s].detect_action(player_action):
-									broadcast(observed_message)
-
-					elif code == '00':
-						pass
-
-		for sock in exceptionals:
-			print(f'(From exceptionals list) Lost connection from {sock.getsockname()}.')
-			if sock in actionable_sockets:
-				actionable_sockets.remove(sock)
-			sock.close()
-			sockets.remove(sock)
-			del message_queues[sock]
-			del command_queues[sock]
-
-
-def close_client(sock):
-	print(f'Lost connection from {sock.getsockname()}.')
-	if sock in actionable_sockets:
-		actionable_sockets.remove(sock)
-	if sock in players:
-		del players[sock]
-	sockets.remove(sock)
-	del message_queues[sock]
-	del command_queues[sock]
-	sock.close()
-
-
-def timed_broadcast():
-	while True:
-		time.sleep(3)
-
-		for client in players.keys():
-			broadcast(client, 'yo')
-
-
-world_thread = threading.Thread(target=run_world, name='world thread')
-world_thread.start()
-
-server_thread = threading.Thread(target=run_server, name='server thread')
-server_thread.start()
+    def toggle_save_button(self, *args):
+        x = self.save_entry_var.get()
+        if len(x) > 0:
+            self.save_button.config(state='normal')
+        if len(x) == 0:
+            self.save_button.config(stat='disabled')
