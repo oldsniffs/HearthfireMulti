@@ -56,11 +56,10 @@ def execute_player_action(player_action):
 
 	# TODO: A covert system. Subject attempts to do something hidden, a check is performed for others to view it
 
-	print (f'Subject: {player_action.subject}\nVerb: {player_action.verb}\nTarget: {player_action.target}')
+	observation = None
 
 	if player_action.verb == 'look':
-		return player_action.subject.location.describe()
-
+		response = player_action.subject.location.describe()
 
 	if player_action.verb == 'go':
 		print('Executing "go"')
@@ -90,4 +89,6 @@ def execute_player_action(player_action):
 					player_action.subject.move(exit=es)
 
 		else:
-			return 'I don\'t understand where you\'re trying to go.'
+			response = 'I don\'t understand where you\'re trying to go.'
+
+	return response, observation

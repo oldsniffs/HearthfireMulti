@@ -1,10 +1,11 @@
 import tkinter as tk
-from tkinter import font as tkfont
 import shelve
 import os
+import threading
 
 import network
 import locations
+import ui
 
 
 class ServerApp(tk.Tk):
@@ -15,8 +16,26 @@ class ServerApp(tk.Tk):
         self.geometry('1500x800')
         self.config(background='black')
 
+        self.frames = {}
+
         self.current_game = 'No game active'
         self.create_widgets()
+
+    def create_widgets(self):
+        self.game_screen = ui.GameScreen()
+        self.game_screen.pack
+
+    def get_player_input(self):
+        return self.game_screen.player_input.get()
+
+    def process_command(self):
+        command = self.get_player_input()
+
+        if command == 'start':
+            pass
+
+    def show_frame(self):
+        pass
 
 
 class Menu(tk.Frame):
@@ -59,3 +78,7 @@ class Menu(tk.Frame):
             self.save_button.config(state='normal')
         if len(x) == 0:
             self.save_button.config(stat='disabled')
+
+
+server_thread = threading.Thread(target=network.run_server, name='server thread', args=(locations.World(),))
+server_thread.start()
